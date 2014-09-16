@@ -1,2 +1,2 @@
-ICounter
+link-checker
 ========
