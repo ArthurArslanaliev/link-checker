@@ -1,6 +1,7 @@
 import urllib
 import urlparse
 from sgmllib import SGMLParser
+import sys
 
 
 class Link(object):
@@ -78,7 +79,7 @@ class LinkChecker(object):
     def __init__(self, base_uri, html_parser, http_provider):
         error = r"The uri format is protocol://domain.com"
         if not UrlWorker.has_schema(base_uri):
-            raise Exception(error)
+            raise ValueError(error)
         self._base_uri = base_uri
         self._html_parser = html_parser
         self._http_provider = http_provider
@@ -102,13 +103,17 @@ class LinkChecker(object):
             html, code = self._http_provider.fetch(link.href)
             link.exists = bool(code == 200 and html)
 
-    def _is_new(self, uri):
+    def _is_new(self, href):
         for link in self._links:
-            if UrlWorker.is_equal(self._base_uri, link.href, uri):
+            if UrlWorker.is_equal(self._base_uri, link.href, href):
                 return False
         return True
 
 
 if __name__ == "__main__":
-    link_checker = LinkChecker("http://devcenter.spscommerce.com/", HtmlParser(), HttpProvider)
-    link_checker.check()
+    if len(sys.argv) == 2:
+        site = sys.argv[1]
+        link_checker = LinkChecker(site, HtmlParser(), HttpProvider)
+        link_checker.check()
+    else:
+        raise ValueError("Please pass one argument which is website URL in the format of protocol://domain")
