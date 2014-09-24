@@ -1,5 +1,5 @@
 import os
-from link_checker.link_checker import Link, HtmlParser
+from link_checker.link_checker import Link, UrlLister
 
 test_data = "test_data"
 
@@ -10,20 +10,20 @@ def test_link_init():
 
 
 def test_init():
-    assert len(HtmlParser().links) == 0
+    assert len(UrlLister().links) == 0
 
 
 def test_parsing():
     test_parser = "valid_html.html"
     with open(os.path.join(os.getcwd(), test_data, test_parser)) as f:
         html = f.read()
-        parser = HtmlParser()
+        parser = UrlLister()
         parser.parse(html)
         assert len(parser.links) == 3
 
 
 def test_empty_link():
     html = r"<a><\a>"
-    parser = HtmlParser()
+    parser = UrlLister()
     parser.parse(html)
     assert len(parser.links) == 0

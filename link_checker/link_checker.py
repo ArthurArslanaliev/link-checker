@@ -1,6 +1,6 @@
+from HTMLParser import HTMLParser
 import urllib
 import urlparse
-from sgmllib import SGMLParser
 import sys
 
 
@@ -10,17 +10,20 @@ class Link(object):
         self.exists = False
 
 
-class HtmlParser(SGMLParser):
+class UrlLister(HTMLParser):
     def reset(self):
-        SGMLParser.reset(self)
+        HTMLParser.reset(self)
         self.links = []
 
-    def start_a(self, attr):
-        href = [v for k, v in attr if k == "href"]
-        if len(href) == 1:
-            self.links.append(href[0])
+    def handle_starttag(self, tag, attr):
+        if tag == 'a':
+            href = [v for k, v in attr if k == "href"]
+            if len(href) == 1:
+                self.links.append(href[0])
+                print(self.getpos())
 
     def parse(self, html):
+        self.reset()
         self.feed(html)
         self.close()
         return self.links
@@ -76,12 +79,12 @@ class UrlWorker(object):
 
 
 class LinkChecker(object):
-    def __init__(self, base_uri, html_parser, http_provider):
+    def __init__(self, base_uri, url_lister, http_provider):
         error = r"The uri format is protocol://domain.com"
         if not UrlWorker.has_schema(base_uri):
             raise ValueError(error)
         self._base_uri = base_uri
-        self._html_parser = html_parser
+        self._url_lister = url_lister
         self._http_provider = http_provider
         self._links = [Link(base_uri)]
         self._index = 0
@@ -98,7 +101,7 @@ class LinkChecker(object):
             html, code = self._http_provider.fetch(link.href)
             if code == 200 and html:
                 link.exists = True
-                self._links.extend([Link(l) for l in filter(self._is_new, set(self._html_parser.parse(html)))])
+                self._links.extend([Link(l) for l in filter(self._is_new, set(self._url_lister.parse(html)))])
         else:
             html, code = self._http_provider.fetch(link.href)
             link.exists = bool(code == 200 and html)
@@ -113,7 +116,7 @@ class LinkChecker(object):
 if __name__ == "__main__":
     if len(sys.argv) == 2:
         site = sys.argv[1]
-        link_checker = LinkChecker(site, HtmlParser(), HttpProvider)
+        link_checker = LinkChecker(site, UrlLister(), HttpProvider)
         link_checker.check()
     else:
         raise ValueError("Please pass one argument which is website URL in the format of protocol://domain")
