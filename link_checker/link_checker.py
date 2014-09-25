@@ -1,4 +1,5 @@
 from HTMLParser import HTMLParser
+from threading import Thread
 import urllib
 import urlparse
 import sys
@@ -8,6 +9,7 @@ class Link(object):
     def __init__(self, href):
         self.href = href
         self.exists = False
+        self.checked = False
 
 
 class UrlLister(HTMLParser):
@@ -20,13 +22,23 @@ class UrlLister(HTMLParser):
             href = [v for k, v in attr if k == "href"]
             if len(href) == 1:
                 self.links.append(href[0])
-                print(self.getpos())
 
     def parse(self, html):
         self.reset()
         self.feed(html)
         self.close()
         return self.links
+
+
+class Worker(Thread):
+    def __init__(self, link_object, checker):
+        super(Worker, self).__init__()
+        self._link = link_object
+        self._checker = checker
+        self.collected_links = []
+
+    def run(self):
+        self.collected_links = self._checker.check_for_worker(self._link)
 
 
 class HttpProvider(object):
@@ -90,9 +102,33 @@ class LinkChecker(object):
         self._index = 0
 
     def check(self):
-        while self._index < len(self._links):
-            self._check(self._links[self._index])
-            self._index += 1
+        while self.has_unchecked_links(self._links):
+
+            unchecked_links = [link for link in self._links if link.checked is False]
+
+            workers = []
+
+            for link in unchecked_links:
+                worker = Worker(link, self)
+                workers.append(worker)
+
+            for worker in workers:
+                worker.daemon = True
+                worker.start()
+
+            for worker in workers:
+                worker.join()
+
+            for worker in workers:
+                collected_links = worker.collected_links
+                if len(collected_links) > 0:
+                    unique = [Link(l) for l in filter(self._is_new, collected_links)]
+                    self._links.extend(unique)
+
+        print("done")
+
+
+
 
     def _check(self, link):
         if UrlWorker.is_internal(self._base_uri, link.href):
@@ -106,11 +142,31 @@ class LinkChecker(object):
             html, code = self._http_provider.fetch(link.href)
             link.exists = bool(code == 200 and html)
 
+    def check_for_worker(self, link):
+        links = []
+        if UrlWorker.is_internal(self._base_uri, link.href):
+            if UrlWorker.is_relative(link.href):
+                link.href = UrlWorker.to_absolute(self._base_uri, link.href)
+            html, code = self._http_provider.fetch(link.href)
+            if code == 200 and html:
+                link.exists = True
+                link.checked = True
+                links = list(set(self._url_lister.parse(html)))
+        else:
+            html, code = self._http_provider.fetch(link.href)
+            link.exists = bool(code == 200 and html)
+            link.checked = True
+        return links
+
     def _is_new(self, href):
         for link in self._links:
             if UrlWorker.is_equal(self._base_uri, link.href, href):
                 return False
         return True
+
+    def has_unchecked_links(self, _links):
+        unchecked_links = [link for link in _links if link.checked is False]
+        return len(unchecked_links) > 0
 
 
 if __name__ == "__main__":
