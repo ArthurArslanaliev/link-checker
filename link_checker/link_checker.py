@@ -1,8 +1,9 @@
+import sys
+import urlparse
+import urllib
+
 from HTMLParser import HTMLParser
 from threading import Thread
-import urllib
-import urlparse
-import sys
 
 
 class Link(object):
@@ -47,7 +48,11 @@ class HttpProvider(object):
         try:
             print("Processing: {0}".format(uri))
             source = urllib.urlopen(uri)
-            html = source.read()
+            encoding = source.headers.getparam('charset')
+            if encoding:
+                html = source.read().decode(encoding, errors="ignore")
+            else:
+                html = source.read()
             code = source.getcode()
             source.close()
             return html, code
@@ -82,6 +87,8 @@ class UrlWorker(object):
 
     @staticmethod
     def escape(uri):
+        if isinstance(uri, unicode):
+            return uri.encode("unicode-escape")
         return uri.encode("string-escape")
 
     @staticmethod
@@ -91,12 +98,11 @@ class UrlWorker(object):
 
 
 class LinkChecker(object):
-    def __init__(self, base_uri, url_lister, http_provider):
+    def __init__(self, base_uri, http_provider):
         error = r"The uri format is protocol://domain.com"
         if not UrlWorker.has_schema(base_uri):
             raise ValueError(error)
         self._base_uri = base_uri
-        self._url_lister = url_lister
         self._http_provider = http_provider
         self._links = [Link(base_uri)]
         self._index = 0
@@ -128,8 +134,6 @@ class LinkChecker(object):
         print("done")
 
 
-
-
     def _check(self, link):
         if UrlWorker.is_internal(self._base_uri, link.href):
             if UrlWorker.is_relative(link.href):
@@ -137,7 +141,7 @@ class LinkChecker(object):
             html, code = self._http_provider.fetch(link.href)
             if code == 200 and html:
                 link.exists = True
-                self._links.extend([Link(l) for l in filter(self._is_new, set(self._url_lister.parse(html)))])
+                self._links.extend([Link(l) for l in filter(self._is_new, set(UrlLister().parse(html)))])
         else:
             html, code = self._http_provider.fetch(link.href)
             link.exists = bool(code == 200 and html)
@@ -151,7 +155,7 @@ class LinkChecker(object):
             if code == 200 and html:
                 link.exists = True
                 link.checked = True
-                links = list(set(self._url_lister.parse(html)))
+                links = list(set(UrlLister().parse(html)))
         else:
             html, code = self._http_provider.fetch(link.href)
             link.exists = bool(code == 200 and html)
@@ -172,7 +176,7 @@ class LinkChecker(object):
 if __name__ == "__main__":
     if len(sys.argv) == 2:
         site = sys.argv[1]
-        link_checker = LinkChecker(site, UrlLister(), HttpProvider)
+        link_checker = LinkChecker(site, HttpProvider)
         link_checker.check()
     else:
         raise ValueError("Please pass one argument which is website URL in the format of protocol://domain")
