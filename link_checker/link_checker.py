@@ -98,6 +98,8 @@ class UrlWorker(object):
 
 
 class LinkChecker(object):
+    max_threads = 10
+
     def __init__(self, base_uri, http_provider):
         error = r"The uri format is protocol://domain.com"
         if not UrlWorker.has_schema(base_uri):
@@ -109,12 +111,9 @@ class LinkChecker(object):
 
     def check(self):
         while self.has_unchecked_links(self._links):
-
             unchecked_links = [link for link in self._links if link.checked is False]
-
             workers = []
-
-            for link in unchecked_links:
+            for link in unchecked_links[0:self.max_threads]:
                 worker = Worker(link, self)
                 workers.append(worker)
 
@@ -131,8 +130,7 @@ class LinkChecker(object):
                     unique = [Link(l) for l in filter(self._is_new, collected_links)]
                     self._links.extend(unique)
 
-        print("done")
-
+        ConsoleReporter.report(self._links)
 
     def _check(self, link):
         if UrlWorker.is_internal(self._base_uri, link.href):
@@ -171,6 +169,19 @@ class LinkChecker(object):
     def has_unchecked_links(self, _links):
         unchecked_links = [link for link in _links if link.checked is False]
         return len(unchecked_links) > 0
+
+
+class ConsoleReporter(object):
+    @staticmethod
+    def report(links):
+        out = "Total links checked: {0}.\n".format(len(links))
+        broken_links = [link for link in links if link.checked and not link.exists]
+        if len(broken_links) > 0:
+            out += "Broken links: {0}.\n".format(len(broken_links))
+            for link in broken_links:
+                out += link.href
+                out += "\n"
+        print(out)
 
 
 if __name__ == "__main__":
