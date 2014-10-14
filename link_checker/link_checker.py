@@ -1,6 +1,6 @@
 import sys
 import urlparse
-import urllib
+import urllib2
 
 from HTMLParser import HTMLParser
 from threading import Thread
@@ -39,15 +39,18 @@ class Worker(Thread):
         self.collected_links = []
 
     def run(self):
-        self.collected_links = self._checker.check_for_worker(self._link)
+        self.collected_links = self._checker._check(self._link)
 
 
 class HttpProvider(object):
+    user_agent = 'Super Browser'
+
     @staticmethod
     def fetch(uri):
         try:
             print("Processing: {0}".format(uri))
-            source = urllib.urlopen(uri)
+            req = urllib2.Request(uri, headers={'User-Agent': HttpProvider.user_agent})
+            source = urllib2.urlopen(req)
             encoding = source.headers.getparam('charset')
             if encoding:
                 html = source.read().decode(encoding, errors="ignore")
@@ -59,7 +62,7 @@ class HttpProvider(object):
         except IOError:
             return None, 404
 
-
+#TODO: The URLs with hash get incorrectly compared
 class UrlWorker(object):
     @staticmethod
     def is_relative(uri):
@@ -100,20 +103,22 @@ class UrlWorker(object):
 class LinkChecker(object):
     max_threads = 10
 
+    invalid_uri_error = r"The uri format is protocol://domain.com"
+
     def __init__(self, base_uri, http_provider):
-        error = r"The uri format is protocol://domain.com"
         if not UrlWorker.has_schema(base_uri):
-            raise ValueError(error)
+            raise ValueError(self.invalid_uri_error)
         self._base_uri = base_uri
         self._http_provider = http_provider
         self._links = [Link(base_uri)]
         self._index = 0
 
+    #TODO: This needs to be optimized. The main thread after worker.join() doing nothing useful
     def check(self):
-        while self.has_unchecked_links(self._links):
-            unchecked_links = [link for link in self._links if link.checked is False]
+        while self._has_unchecked_links():
+            unchecked_links = self._get_unchecked_links()
             workers = []
-            for link in unchecked_links[0:self.max_threads]:
+            for link in unchecked_links:
                 worker = Worker(link, self)
                 workers.append(worker)
 
@@ -133,18 +138,6 @@ class LinkChecker(object):
         ConsoleReporter.report(self._links)
 
     def _check(self, link):
-        if UrlWorker.is_internal(self._base_uri, link.href):
-            if UrlWorker.is_relative(link.href):
-                link.href = UrlWorker.to_absolute(self._base_uri, link.href)
-            html, code = self._http_provider.fetch(link.href)
-            if code == 200 and html:
-                link.exists = True
-                self._links.extend([Link(l) for l in filter(self._is_new, set(UrlLister().parse(html)))])
-        else:
-            html, code = self._http_provider.fetch(link.href)
-            link.exists = bool(code == 200 and html)
-
-    def check_for_worker(self, link):
         links = []
         if UrlWorker.is_internal(self._base_uri, link.href):
             if UrlWorker.is_relative(link.href):
@@ -166,9 +159,12 @@ class LinkChecker(object):
                 return False
         return True
 
-    def has_unchecked_links(self, _links):
-        unchecked_links = [link for link in _links if link.checked is False]
+    def _has_unchecked_links(self):
+        unchecked_links = self._get_unchecked_links()
         return len(unchecked_links) > 0
+
+    def _get_unchecked_links(self):
+        return [link for link in self._links if link.checked is False]
 
 
 class ConsoleReporter(object):
