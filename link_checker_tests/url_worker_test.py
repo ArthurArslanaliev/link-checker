@@ -43,3 +43,9 @@ def test_to_absolute():
     assert UrlWorker.to_absolute("http://foo.com/", "/item") == "http://foo.com/item"
     assert UrlWorker.to_absolute("http://foo.com/", "item") == "http://foo.com/item"
     assert UrlWorker.to_absolute("http://foo.com", "item") == "http://foo.com/item"
+
+
+def test_links_comparison():
+    assert UrlWorker.is_equal(base_uri, "http://foo.com", "http://foo.com/") is True
+    assert UrlWorker.is_equal(base_uri, "http://foo.com", "/") is True
+    assert UrlWorker.is_equal(base_uri, "http://foo.com/foo.html#bar", "http://foo.com/foo.html#foo") is False

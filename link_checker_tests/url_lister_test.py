@@ -15,7 +15,8 @@ def test_init():
 
 def test_parsing():
     test_parser = "valid_html.html"
-    with open(os.path.join(os.getcwd(), test_data, test_parser)) as f:
+    path = os.path.join(os.path.dirname(__file__), test_data, test_parser)
+    with open(path) as f:
         html = f.read()
         parser = UrlLister()
         parser.parse(html)

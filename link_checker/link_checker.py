@@ -62,7 +62,7 @@ class HttpProvider(object):
         except IOError:
             return None, 404
 
-#TODO: The URLs with hash get incorrectly compared
+
 class UrlWorker(object):
     @staticmethod
     def is_relative(uri):
@@ -86,7 +86,7 @@ class UrlWorker(object):
 
     @staticmethod
     def is_equal(base_uri, uri1, uri2):
-        return UrlWorker.to_absolute(base_uri, uri1) == UrlWorker.to_absolute(base_uri, uri2)
+        return UrlWorker.to_absolute(base_uri, uri1).rstrip('/') == UrlWorker.to_absolute(base_uri, uri2).rstrip('/')
 
     @staticmethod
     def escape(uri):
@@ -113,12 +113,12 @@ class LinkChecker(object):
         self._links = [Link(base_uri)]
         self._index = 0
 
-    #TODO: This needs to be optimized. The main thread after worker.join() doing nothing useful
     def check(self):
         while self._has_unchecked_links():
             unchecked_links = self._get_unchecked_links()
             workers = []
-            for link in unchecked_links:
+
+            for link in unchecked_links[0:self.max_threads]:
                 worker = Worker(link, self)
                 workers.append(worker)
 
@@ -128,8 +128,6 @@ class LinkChecker(object):
 
             for worker in workers:
                 worker.join()
-
-            for worker in workers:
                 collected_links = worker.collected_links
                 if len(collected_links) > 0:
                     unique = [Link(l) for l in filter(self._is_new, collected_links)]
