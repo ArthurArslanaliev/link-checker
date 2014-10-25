@@ -48,8 +48,8 @@ class HttpProvider(object):
     @staticmethod
     def fetch(uri):
         try:
-            print("Processing: {0}".format(uri))
-            req = urllib2.Request(uri, headers={'User-Agent': HttpProvider.user_agent})
+            print(uri.encode('UTF-8'))
+            req = urllib2.Request(uri.encode('UTF-8'), headers={'User-Agent': HttpProvider.user_agent})
             source = urllib2.urlopen(req)
             encoding = source.headers.getparam('charset')
             if encoding:
