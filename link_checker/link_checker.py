@@ -101,7 +101,7 @@ class UrlWorker(object):
 
 
 class LinkChecker(object):
-    max_threads = 10
+    max_threads = 60
 
     invalid_uri_error = r"The uri format is protocol://domain.com"
 
@@ -111,18 +111,14 @@ class LinkChecker(object):
         self._base_uri = base_uri
         self._http_provider = http_provider
         self._links = [Link(base_uri)]
-        self._index = 0
 
     def check(self):
         while self._has_unchecked_links():
             unchecked_links = self._get_unchecked_links()
             workers = []
-
             for link in unchecked_links[0:self.max_threads]:
                 worker = Worker(link, self)
                 workers.append(worker)
-
-            for worker in workers:
                 worker.daemon = True
                 worker.start()
 
@@ -130,7 +126,7 @@ class LinkChecker(object):
                 worker.join()
                 collected_links = worker.collected_links
                 if len(collected_links) > 0:
-                    unique = [Link(l) for l in filter(self._is_new, collected_links)]
+                    unique = [Link(l) for l in collected_links if self._is_new(l)]
                     self._links.extend(unique)
 
         ConsoleReporter.report(self._links)
@@ -158,8 +154,7 @@ class LinkChecker(object):
         return True
 
     def _has_unchecked_links(self):
-        unchecked_links = self._get_unchecked_links()
-        return len(unchecked_links) > 0
+        return len(self._get_unchecked_links()) > 0
 
     def _get_unchecked_links(self):
         return [link for link in self._links if link.checked is False]
