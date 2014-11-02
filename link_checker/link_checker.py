@@ -50,7 +50,7 @@ class HttpProvider(object):
         try:
             print(uri.encode('UTF-8'))
             req = urllib2.Request(uri.encode('UTF-8'), headers={'User-Agent': HttpProvider.user_agent})
-            source = urllib2.urlopen(req)
+            source = urllib2.urlopen(req, timeout=5)
             encoding = source.headers.getparam('charset')
             if encoding:
                 html = source.read().decode(encoding, errors="ignore")
@@ -139,12 +139,11 @@ class LinkChecker(object):
             html, code = self._http_provider.fetch(link.href)
             if code == 200 and html:
                 link.exists = True
-                link.checked = True
                 links = list(set(UrlLister().parse(html)))
         else:
             html, code = self._http_provider.fetch(link.href)
             link.exists = bool(code == 200 and html)
-            link.checked = True
+        link.checked = True
         return links
 
     def _is_new(self, href):
