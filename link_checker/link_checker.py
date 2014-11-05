@@ -6,13 +6,6 @@ from HTMLParser import HTMLParser
 from threading import Thread
 
 
-class Link(object):
-    def __init__(self, href):
-        self.href = href
-        self.exists = False
-        self.checked = False
-
-
 class UrlLister(HTMLParser):
     def reset(self):
         HTMLParser.reset(self)
@@ -110,7 +103,7 @@ class LinkChecker(object):
             raise ValueError(self.invalid_uri_error)
         self._base_uri = base_uri
         self._http_provider = http_provider
-        self._links = [Link(base_uri)]
+        self._links = {base_uri: {"checked": False, "exists": False}}
 
     def check(self):
         while self._has_unchecked_links():
@@ -126,48 +119,42 @@ class LinkChecker(object):
                 worker.join()
                 collected_links = worker.collected_links
                 if len(collected_links) > 0:
-                    unique = [Link(l) for l in collected_links if self._is_new(l)]
-                    self._links.extend(unique)
+                    unique = {l: {"checked": False, "exists": False} for l in collected_links if l not in self._links}
+                    self._links = dict(self._links.items() + unique.items())
 
         ConsoleReporter.report(self._links)
 
     def _check(self, link):
         links = []
-        if UrlWorker.is_internal(self._base_uri, link.href):
-            if UrlWorker.is_relative(link.href):
-                link.href = UrlWorker.to_absolute(self._base_uri, link.href)
-            html, code = self._http_provider.fetch(link.href)
+        if UrlWorker.is_internal(self._base_uri, link[0]):
+            if UrlWorker.is_relative(link[0]):
+                link[0] = UrlWorker.to_absolute(self._base_uri, link[0])
+            html, code = self._http_provider.fetch(link[0])
             if code == 200 and html:
-                link.exists = True
+                link[1]["exists"] = True
                 links = list(set(UrlLister().parse(html)))
         else:
-            html, code = self._http_provider.fetch(link.href)
-            link.exists = bool(code == 200 and html)
-        link.checked = True
+            html, code = self._http_provider.fetch(link[0])
+            link[1]["exists"] = bool(code == 200 and html)
+        link[1]["checked"] = True
         return links
-
-    def _is_new(self, href):
-        for link in self._links:
-            if UrlWorker.is_equal(self._base_uri, link.href, href):
-                return False
-        return True
 
     def _has_unchecked_links(self):
         return len(self._get_unchecked_links()) > 0
 
     def _get_unchecked_links(self):
-        return [link for link in self._links if link.checked is False]
+        return [[k, v] for k, v in self._links.iteritems() if not v["checked"]]
 
 
 class ConsoleReporter(object):
     @staticmethod
     def report(links):
         out = "Total links checked: {0}.\n".format(len(links))
-        broken_links = [link for link in links if link.checked and not link.exists]
+        broken_links = [k for k, v in links.iteritems() if v["checked"] and not v["exists"]]
         if len(broken_links) > 0:
             out += "Broken links: {0}.\n".format(len(broken_links))
             for link in broken_links:
-                out += link.href
+                out += link
                 out += "\n"
         print(out)
 
