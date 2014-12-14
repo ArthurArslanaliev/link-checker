@@ -1,4 +1,4 @@
-from link_checker.link_checker import HttpProvider
+from link_checker.HttpProvider import HttpProvider
 
 
 def test_invalid_uri():

@@ -1,4 +1,4 @@
-from link_checker.link_checker import LinkChecker
+from link_checker.LinkChecker import LinkChecker
 
 test_link = r"<a href='https://bar.com'><\a>"
 test_uri = r"http://foo.com"
