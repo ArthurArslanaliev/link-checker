@@ -8,15 +8,18 @@ class HttpProvider(object):
     @staticmethod
     def fetch(uri):
         try:
-            print(uri.encode('utf-8'))
             req = urllib2.Request(uri.encode('utf-8'), headers={'User-Agent': HttpProvider.user_agent})
-            source = urllib2.urlopen(req, timeout=10)
+            source = urllib2.urlopen(req, timeout=5)
+            code = source.getcode()
+
+            if 'HTML' not in source.info().typeheader.upper():
+                return None, code
+
             encoding = source.headers.getparam('charset')
             if encoding:
                 html = source.read().decode(encoding, errors='ignore')
             else:
                 html = source.read().decode('utf-8', errors='ignore')
-            code = source.getcode()
             source.close()
             return html, code
         except httplib.BadStatusLine:

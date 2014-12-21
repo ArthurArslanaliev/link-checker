@@ -35,6 +35,9 @@ class UrlUtils(object):
 
     @staticmethod
     def normalize(base_uri, uri):
+        if uri.startswith('//'):
+            scheme = urlparse.urlparse(base_uri)[0]
+            return '{0}:{1}'.format(scheme, uri)
         if UrlUtils.is_relative(uri):
             return UrlUtils.to_absolute(base_uri, uri)
         return uri

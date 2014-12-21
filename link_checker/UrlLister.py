@@ -9,7 +9,7 @@ class UrlLister(HTMLParser):
     def handle_starttag(self, tag, attr):
         if tag == 'a':
             href = [v for k, v in attr if k == "href"]
-            if len(href) == 1:
+            if len(href) == 1 and href[0]:
                 self.links.append(href[0])
 
     def parse(self, html):

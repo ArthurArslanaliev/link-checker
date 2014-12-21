@@ -25,9 +25,9 @@ class Worker(Thread):
     def _check(self, link):
         links = []
         html, code = self._http.fetch(link[0])
-        if code == 200 and html:
+        if code == 200:
             link[1]["exists"] = True
-            if UrlUtils.is_internal(self._base_url, link[0]):
+            if UrlUtils.is_internal(self._base_url, link[0]) and html:
                 links = [UrlUtils.normalize(self._base_url, l) for l in list(set(self._lister.parse(html)))]
         else:
             link[1]["exists"] = False
@@ -65,11 +65,16 @@ class LinkChecker(object):
                 if len(collected_links) > 0:
                     unique = {l: {"checked": False, "exists": False} for l in collected_links if l not in self._links}
                     self._links = dict(self._links.items() + unique.items())
+                    self._print()
 
         ConsoleReporter.report(self._links)
 
     def _get_unchecked_links(self):
         return [[k, v] for k, v in self._links.iteritems() if not v["checked"]]
+
+    def _print(self):
+        sys.stdout.write("\rlinks collected: %s" % len(self._links))
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":
