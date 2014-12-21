@@ -31,7 +31,7 @@ class UrlUtils(object):
     @staticmethod
     def has_schema(uri):
         parts = urlparse.urlparse(uri)
-        return parts[0] and parts[1]
+        return parts[0] != '' and parts[1] != ''
 
     @staticmethod
     def normalize(base_uri, uri):

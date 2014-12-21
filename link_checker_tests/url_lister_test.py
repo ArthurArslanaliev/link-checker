@@ -1,13 +1,8 @@
 import os
 from link_checker.UrlLister import UrlLister
-from link_checker.LinkChecker import Link
+
 
 test_data = "test_data"
-
-
-def test_link_init():
-    link = Link("foo-bar")
-    assert link.exists is False
 
 
 def test_init():
