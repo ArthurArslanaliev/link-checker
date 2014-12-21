@@ -1,4 +1,4 @@
 ## Usage
 
-python.exe LinkChecker.py https://google.com/
+python ./dist/LinkChecker.py https://google.com/
 
