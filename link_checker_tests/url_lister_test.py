@@ -1,12 +1,8 @@
 import os
-from link_checker.link_checker import Link, UrlLister
+from link_checker.UrlLister import UrlLister
+
 
 test_data = "test_data"
-
-
-def test_link_init():
-    link = Link("foo-bar")
-    assert link.exists is False
 
 
 def test_init():
@@ -15,7 +11,8 @@ def test_init():
 
 def test_parsing():
     test_parser = "valid_html.html"
-    with open(os.path.join(os.getcwd(), test_data, test_parser)) as f:
+    path = os.path.join(os.path.dirname(__file__), test_data, test_parser)
+    with open(path) as f:
         html = f.read()
         parser = UrlLister()
         parser.parse(html)

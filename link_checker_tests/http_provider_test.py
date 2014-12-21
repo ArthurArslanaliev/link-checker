@@ -1,15 +1,22 @@
-from link_checker.link_checker import HttpProvider
+from link_checker.HttpProvider import HttpProvider
+
+
+def test_valid_uri():
+    href = 'https://google.com'
+    html, code = HttpProvider.fetch(href)
+    assert len(html) > 0
+    assert code == 200
+
+
+def test_valid_resource():
+    href = 'http://www.w3.org/Addressing/URL/url-spec.txt'
+    html, code = HttpProvider.fetch(href)
+    assert html is None
+    assert code == 200
 
 
 def test_invalid_uri():
     href = "javascript:void()"
-    html, code = HttpProvider.fetch(href)
-    assert html is None
-    assert code == 404
-
-
-def test_non_existing_uri():
-    href = "http://life.is.awesome.com/"
     html, code = HttpProvider.fetch(href)
     assert html is None
     assert code == 404
