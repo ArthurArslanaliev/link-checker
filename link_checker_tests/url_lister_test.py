@@ -16,7 +16,7 @@ def test_parsing():
         html = f.read()
         parser = UrlLister()
         parser.parse(html)
-        assert len(parser.links) == 3
+        assert len(parser.links) == 5
 
 
 def test_empty_link():
