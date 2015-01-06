@@ -21,15 +21,15 @@ class HttpProvider(object):
                 return None, code
 
             encoding = source.headers.getparam('charset')
+
             if encoding:
                 html = source.read().decode(encoding, errors='ignore')
             else:
                 html = source.read().decode('utf-8', errors='ignore')
+
             source.close()
             return html, code
-        except httplib.BadStatusLine:
-            return None, 404
-        except IOError:
+        except (httplib.BadStatusLine, IOError):
             return None, 404
 
 
@@ -39,11 +39,11 @@ class UrlLister(HTMLParser):
         self.links = []
 
     def handle_starttag(self, tag, attr):
-        if tag == "a" or tag == "link":
-            self._save_to_links(attr, "href")
+        if tag == 'a' or tag == 'link':
+            self._save_to_links(attr, 'href')
 
-        if tag == "script":
-            self._save_to_links(attr, "src")
+        if tag == 'script':
+            self._save_to_links(attr, 'src')
 
     def parse(self, html):
         self.reset()
@@ -60,16 +60,15 @@ class UrlLister(HTMLParser):
 class UrlUtils(object):
     @staticmethod
     def is_relative(uri):
-        uri = UrlUtils.escape(uri)
-        parts = urlparse.urlparse(uri)
+        parts = urlparse.urlparse(UrlUtils.escape(uri))
         return not parts[1]
 
     @staticmethod
     def is_internal(base_uri, uri):
-        uri = UrlUtils.escape(uri)
-        if uri.startswith(base_uri):
+        escaped = UrlUtils.escape(uri)
+        if escaped.startswith(base_uri):
             return True
-        parts = urlparse.urlparse(uri)
+        parts = urlparse.urlparse(escaped)
         if not parts[0] and not parts[1]:
             return True
         return False
@@ -81,8 +80,8 @@ class UrlUtils(object):
     @staticmethod
     def escape(uri):
         if isinstance(uri, unicode):
-            return uri.encode("unicode-escape")
-        return uri.encode("string-escape")
+            return uri.encode('unicode-escape')
+        return uri.encode('string-escape')
 
     @staticmethod
     def has_schema(uri):
@@ -169,14 +168,15 @@ class LinkChecker(object):
 class ConsoleReporter(object):
     @staticmethod
     def report(links):
-        out = "\rtotal links checked: {0}.\n".format(len(links))
-        broken_links = [k for k, v in links.iteritems() if v["checked"] and not v["exists"]]
+        out = ['\rtotal links checked: {0}.\n'.format(len(links))]
+        broken_links = [k for k, v in links.iteritems() if v['checked'] and not v['exists']]
         if len(broken_links) > 0:
-            out += "broken links: {0}.\n".format(len(broken_links))
+            out.append('broken links: {0}.\n'.format(len(broken_links)))
             for link in broken_links:
-                out += link
-                out += "\n"
-        sys.stdout.write(out)
+                out.append(link)
+                out.append('\n')
+
+        sys.stdout.write(''.join(out))
 
 
 if __name__ == "__main__":
