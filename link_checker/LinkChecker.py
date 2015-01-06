@@ -7,7 +7,8 @@ from HttpProvider import HttpProvider
 from UrlUtils import UrlUtils
 from Reporter import ConsoleReporter
 
-# TODO: Update unit tests
+# TODO: Add handling of 'mail-to:' links
+# TODO: Add handling of relative path with path meta characters (ex: /../../help.html)
 
 
 class Worker(Thread):

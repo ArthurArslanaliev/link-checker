@@ -4,16 +4,15 @@ import urlparse
 class UrlUtils(object):
     @staticmethod
     def is_relative(uri):
-        uri = UrlUtils.escape(uri)
-        parts = urlparse.urlparse(uri)
+        parts = urlparse.urlparse(UrlUtils.escape(uri))
         return not parts[1]
 
     @staticmethod
     def is_internal(base_uri, uri):
-        uri = UrlUtils.escape(uri)
-        if uri.startswith(base_uri):
+        escaped = UrlUtils.escape(uri)
+        if escaped.startswith(base_uri):
             return True
-        parts = urlparse.urlparse(uri)
+        parts = urlparse.urlparse(escaped)
         if not parts[0] and not parts[1]:
             return True
         return False
@@ -25,8 +24,8 @@ class UrlUtils(object):
     @staticmethod
     def escape(uri):
         if isinstance(uri, unicode):
-            return uri.encode("unicode-escape")
-        return uri.encode("string-escape")
+            return uri.encode('unicode-escape')
+        return uri.encode('string-escape')
 
     @staticmethod
     def has_schema(uri):

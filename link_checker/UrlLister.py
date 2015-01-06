@@ -7,11 +7,11 @@ class UrlLister(HTMLParser):
         self.links = []
 
     def handle_starttag(self, tag, attr):
-        if tag == "a" or tag == "link":
-            self._save_to_links(attr, "href")
+        if tag == 'a' or tag == 'link':
+            self._save_to_links(attr, 'href')
 
-        if tag == "script":
-            self._save_to_links(attr, "src")
+        if tag == 'script':
+            self._save_to_links(attr, 'src')
 
     def parse(self, html):
         self.reset()

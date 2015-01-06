@@ -16,13 +16,13 @@ class HttpProvider(object):
                 return None, code
 
             encoding = source.headers.getparam('charset')
+
             if encoding:
                 html = source.read().decode(encoding, errors='ignore')
             else:
                 html = source.read().decode('utf-8', errors='ignore')
+
             source.close()
             return html, code
-        except httplib.BadStatusLine:
-            return None, 404
-        except IOError:
+        except (httplib.BadStatusLine, IOError):
             return None, 404
